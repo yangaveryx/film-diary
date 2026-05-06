@@ -1,16 +1,27 @@
 require("dotenv").config();
 
+const fs = require("fs");
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
 
 const { db, auth } = require("./firebase");
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 8080;
+const publicDir = path.join(__dirname, "../public");
+
+const runtimeFirebaseConfig = {
+  apiKey: process.env.VITE_FIREBASE_API_KEY,
+  authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.VITE_FIREBASE_APP_ID,
+};
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "../public")));
+app.use(express.static(publicDir, { index: false }));
 
 // TMDB configuration
 const TMDB_TOKEN = process.env.TMDB_TOKEN;
@@ -276,9 +287,19 @@ app.delete("/api/watchlist/:userId/:movieId", requireAuth, async (req, res) => {
   }
 });
 
-// catch-all route to serve React for non-API requests
+function renderClient() {
+  const htmlPath = path.join(publicDir, "index.html");
+  const html = fs.readFileSync(htmlPath, "utf8");
+  const bootstrapScript = `<script>window.firebaseConfig = ${JSON.stringify(runtimeFirebaseConfig)};</script>`;
+  return html.replace("</head>", `${bootstrapScript}\n  </head>`);
+}
+
+// catch-all route to serve the React app for non-API requests
 app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public/index.html"));
+  if (req.path.startsWith("/api/")) {
+    return res.status(404).json({ error: "Not found" });
+  }
+  res.type("html").send(renderClient());
 });
 
 app.listen(PORT, () => {
