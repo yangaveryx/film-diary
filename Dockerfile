@@ -25,7 +25,7 @@ RUN npm ci --production --silent
 COPY server ./server
 
 # copy built client into a `public` folder at repo root so server/static path works
-COPY --from=builder /app/dist-client ./public
+COPY --from=builder /app/dist ./public
 
 # expose server port
 EXPOSE 8080
