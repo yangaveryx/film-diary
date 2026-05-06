@@ -6,7 +6,7 @@ export default defineConfig({
   root: 'src',
   envDir: '..',
   build: {
-    outDir: '../dist-client',
+    outDir: '../dist',
     emptyOutDir: true,
   },
 })
